@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import * as ts from "typescript";
-import { transpileProject } from "typescript-to-lua";
+import { Transpiler, transpileProject } from "typescript-to-lua";
 import { ensureOutputDirectory, writeCodeblock } from "./msw-files";
 import { createMswPlugin } from "./plugin";
 import { writeLualibBundleScript } from "./lualib-wrapper";
@@ -13,6 +13,10 @@ export interface BuildOptions {
 export interface BuildResult {
     emitSkipped: boolean;
     outputDirectory: string;
+}
+
+export interface WatchOptions {
+    workingDirectory: string;
 }
 
 export async function build({
@@ -88,4 +92,101 @@ export async function build({
     }
 
     return { emitSkipped, outputDirectory: outDir };
+}
+
+export function watch({ workingDirectory }: WatchOptions): void {
+    const resolvedWorkingDirectory = path.resolve(workingDirectory);
+    const scriptDir = path.join(resolvedWorkingDirectory, "Script");
+    const outDir = path.join(
+        resolvedWorkingDirectory,
+        "RootDesk",
+        "MyDesk",
+        "Transpiled",
+    );
+    const tsconfigPath = path.join(resolvedWorkingDirectory, "tsconfig.json");
+
+    if (!fs.existsSync(scriptDir)) {
+        fs.mkdirSync(scriptDir, { recursive: true });
+    }
+
+    const { plugin, emittedScripts } = createMswPlugin();
+    const transpiler = new Transpiler();
+
+    // Cast needed: TSTL extends ts.CompilerOptions with extra fields unknown to tsc's types.
+    const tstlOptions = {
+        luaPlugins: [{ plugin }],
+        noHeader: true,
+        noEmit: false,
+        noImplicitSelf: true,
+        experimentalDecorators: true,
+        extension: "mlua",
+        module: ts.ModuleKind.CommonJS,
+        moduleResolution: ts.ModuleResolutionKind.Classic,
+        rootDir: scriptDir,
+        outDir,
+    } as unknown as ts.CompilerOptions;
+
+    const host = ts.createWatchCompilerHost(
+        tsconfigPath,
+        tstlOptions,
+        ts.sys,
+        ts.createSemanticDiagnosticsBuilderProgram,
+    );
+
+    host.afterProgramCreate = (builderProgram) => {
+        try {
+            const program = builderProgram.getProgram();
+            emittedScripts.clear();
+
+            const { diagnostics } = transpiler.emit({ program });
+
+            const errors = diagnostics.filter(
+                (d) =>
+                    d.category === ts.DiagnosticCategory.Error &&
+                    d.messageText !==
+                        "Decorator function cannot have 'this: void'.",
+            );
+
+            if (errors.length > 0) {
+                const formatted = ts.formatDiagnosticsWithColorAndContext(
+                    errors,
+                    {
+                        getCurrentDirectory: () => resolvedWorkingDirectory,
+                        getCanonicalFileName: (f) => f,
+                        getNewLine: () => "\n",
+                    },
+                );
+                process.stderr.write(formatted);
+                return;
+            }
+
+            writeLualibBundleScript(outDir);
+
+            const rootDesk = path.join(resolvedWorkingDirectory, "RootDesk");
+            for (const [sourceFile, scriptType] of emittedScripts) {
+                const rel = path.relative(scriptDir, sourceFile);
+                const mlua = path.join(outDir, rel.replace(/\.ts$/, ".mlua"));
+                const mluaDir = path.dirname(mlua);
+                const name = path.basename(mlua, ".mlua");
+
+                ensureOutputDirectory(rootDesk, mluaDir);
+                writeCodeblock(
+                    path.join(mluaDir, `${name}.codeblock`),
+                    name,
+                    scriptType,
+                );
+            }
+
+            console.log(
+                `[${new Date().toLocaleTimeString()}] Build complete. Watching for changes...`,
+            );
+        } catch (err) {
+            console.error(
+                "[tsw] Unexpected error during build:",
+                err instanceof Error ? err.message : err,
+            );
+        }
+    };
+
+    ts.createWatchProgram(host);
 }

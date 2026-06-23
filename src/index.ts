@@ -1,6 +1,6 @@
 import { Command, Option } from "commander";
 import { generateDeclarations } from "./declarations";
-import { build } from "./transpile";
+import { build, watch } from "./transpile";
 
 function addWorkingDirectoryOptions(cmd: Command): Command {
     return cmd.addOption(
@@ -60,6 +60,18 @@ async function main() {
         } else {
             console.log(`Build complete in ${result.outputDirectory}`);
         }
+    });
+
+    const watchCmd = program
+        .command("watch")
+        .description("Watch TypeScript sources and recompile on change.");
+    addWorkingDirectoryOptions(watchCmd);
+    watchCmd.action(() => {
+        const opts = watchCmd.optsWithGlobals<{
+            cwd: string;
+            workingDirectory?: string;
+        }>();
+        watch({ workingDirectory: resolveWorkingDirectory(opts) });
     });
 
     // Legacy default: no subcommand runs declarations
