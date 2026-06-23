@@ -158,7 +158,14 @@ export function printMluaScript(
         const params = member.parameters
             .map((p) => {
                 const pName = ts.isIdentifier(p.name) ? p.name.text : "_";
-                return `${resolveType(program, p, true)} ${pName}`;
+                const typeStr = resolveType(program, p, true);
+                if (p.initializer) {
+                    return `${typeStr} ${pName} = ${p.initializer.getText(sourceFile)}`;
+                }
+                if (p.questionToken) {
+                    return `${typeStr} ${pName} = nil`;
+                }
+                return `${typeStr} ${pName}`;
             })
             .join(", ");
 
