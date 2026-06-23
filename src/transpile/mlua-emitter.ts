@@ -3,7 +3,7 @@ import * as tstl from "typescript-to-lua";
 import type { ScriptClassInfo } from "./script-class";
 import { hasImmediateInit, resolveType } from "./type-resolver";
 
-const DUMMY_PARAM = "____MSW_CLASS____";
+export const DUMMY_PARAM = "____MSW_CLASS____";
 
 const MLUA_ANNOTATION: Record<string, string> = {
     ActionNode: "BTNode",
@@ -90,6 +90,23 @@ export function extractWrappedStatements(
         }
     }
     return undefined;
+}
+
+/**
+ * Returns true if a statement is a script class wrapper emitted by wrapClassStatements
+ * for any of the given class names.
+ */
+export function isScriptClassWrapper(
+    s: tstl.Statement,
+    classNames: Set<string>,
+): boolean {
+    if (!tstl.isExpressionStatement(s)) return false;
+    const fn = s.expression;
+    if (!tstl.isFunctionExpression(fn)) return false;
+    if (fn.params?.length !== 2) return false;
+    if (fn.params[0]?.text !== DUMMY_PARAM) return false;
+    const second = fn.params[1]?.text;
+    return second !== undefined && classNames.has(second);
 }
 
 /**

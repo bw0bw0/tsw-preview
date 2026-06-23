@@ -28,7 +28,7 @@ function parseExportedNames(bundleSource: string): string[] {
  *                       that inlines the bundle body and promotes all exports to _G
  *   - LuaLib.codeblock — the MSW metadata sidecar
  */
-export function writeLualibBundleScript(outDir: string): void {
+export function writeLualibBundleScript(outDir: string, extraLuaChunks: string[] = []): void {
     const bundleLuaPath = require.resolve(
         `typescript-to-lua/dist/lualib/universal/${BUNDLE_NAME}.lua`,
     );
@@ -49,6 +49,15 @@ export function writeLualibBundleScript(outDir: string): void {
         .map((n) => `\t\t_G["${n}"] = ${n}`)
         .join("\n");
 
+    const indentedExtras = extraLuaChunks
+        .map((chunk) =>
+            chunk
+                .split("\n")
+                .map((line) => (line.trim() ? `\t\t${line}` : ""))
+                .join("\n"),
+        )
+        .join("\n\n");
+
     const mlua = [
         `@Logic`,
         `script ${SCRIPT_NAME} extends Logic`,
@@ -58,6 +67,7 @@ export function writeLualibBundleScript(outDir: string): void {
         `\t\t_G["__lualib_loaded"] = true`,
         indentedBody,
         globalAssignments,
+        ...(indentedExtras ? [indentedExtras] : []),
         `\tend`,
         ``,
         `end`,

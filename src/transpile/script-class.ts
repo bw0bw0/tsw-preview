@@ -50,12 +50,12 @@ export function findScriptTypeDecorator(
     return undefined;
 }
 
-export function collectScriptClass(sourceFile: ts.SourceFile): {
+export function collectScriptClasses(sourceFile: ts.SourceFile): {
     diagnostics: ts.Diagnostic[];
-    info: ScriptClassInfo | undefined;
+    infos: ScriptClassInfo[];
 } {
     const diagnostics: ts.Diagnostic[] = [];
-    const found: ScriptClassInfo[] = [];
+    const infos: ScriptClassInfo[] = [];
 
     for (const statement of sourceFile.statements) {
         if (!ts.isClassDeclaration(statement)) continue;
@@ -102,7 +102,7 @@ export function collectScriptClass(sourceFile: ts.SourceFile): {
             scriptType = typeMapping ?? decoratorName;
         }
 
-        found.push({
+        infos.push({
             scriptType,
             className: name,
             extendsName,
@@ -110,18 +110,7 @@ export function collectScriptClass(sourceFile: ts.SourceFile): {
         });
     }
 
-    if (found.length > 1) {
-        diagnostics.push(
-            makeDiagnostic(
-                sourceFile,
-                sourceFile,
-                `A file may contain at most one @ScriptType-decorated class, but found ${found.length}: ${found.map((c) => c.className).join(", ")}.`,
-            ),
-        );
-        return { diagnostics, info: undefined };
-    }
-
-    return { diagnostics, info: found[0] };
+    return { diagnostics, infos };
 }
 
 function makeDiagnostic(

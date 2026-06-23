@@ -53,10 +53,10 @@ export function resolveType(
     // Function types aren't expressible in mlua parameters
     if (isParam && raw.includes("=>")) return "any";
 
-    // String literal types → string
+    // String literal types -> string
     if (raw[0] === '"' || raw[0] === "'" || raw[0] === "`") return "string";
 
-    // Extract base name for generic types like List<string> → List
+    // Extract base name for generic types like List<string> -> List
     const baseName = raw.includes("<") ? raw.slice(0, raw.indexOf("<")) : raw;
     if (PASSTHROUGH_TYPES.has(baseName)) return raw;
     if (raw.startsWith("Sync")) return raw;

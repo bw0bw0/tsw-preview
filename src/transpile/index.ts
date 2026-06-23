@@ -36,7 +36,8 @@ export async function build({
         fs.mkdirSync(scriptDir, { recursive: true });
     }
 
-    const { plugin, emittedScripts } = createMswPlugin();
+    const { plugin, emittedScripts, processedSourceFiles, nonScriptClassLuaByFile } =
+        createMswPlugin(outDir);
 
     const { diagnostics, emitSkipped } = transpileProject(tsconfigPath, {
         luaPlugins: [{ plugin }],
@@ -73,20 +74,23 @@ export async function build({
         throw new Error(messages.join("\n"));
     }
 
-    writeLualibBundleScript(outDir);
-
-    // Write .directory sidecars for each output directory, and .codeblock for each script
-    const rootDesk = path.join(resolvedWorkingDirectory, "RootDesk");
-    for (const [sourceFile, scriptType] of emittedScripts) {
+    // Delete the empty per-source-file stubs TSTL wrote (we handled output ourselves)
+    for (const sourceFile of processedSourceFiles) {
         const rel = path.relative(scriptDir, sourceFile);
-        const mlua = path.join(outDir, rel.replace(/\.ts$/, ".mlua"));
-        const mluaDir = path.dirname(mlua);
-        const name = path.basename(mlua, ".mlua");
+        const stubPath = path.join(outDir, rel.replace(/\.ts$/, ".mlua"));
+        if (fs.existsSync(stubPath)) {
+            fs.unlinkSync(stubPath);
+        }
+    }
 
-        ensureOutputDirectory(rootDesk, mluaDir);
+    writeLualibBundleScript(outDir, [...nonScriptClassLuaByFile.values()]);
+
+    const rootDesk = path.join(resolvedWorkingDirectory, "RootDesk");
+    ensureOutputDirectory(rootDesk, outDir);
+    for (const [className, scriptType] of emittedScripts) {
         writeCodeblock(
-            path.join(mluaDir, `${name}.codeblock`),
-            name,
+            path.join(outDir, `${className}.codeblock`),
+            className,
             scriptType,
         );
     }
@@ -109,7 +113,8 @@ export function watch({ workingDirectory }: WatchOptions): void {
         fs.mkdirSync(scriptDir, { recursive: true });
     }
 
-    const { plugin, emittedScripts } = createMswPlugin();
+    const { plugin, emittedScripts, processedSourceFiles, nonScriptClassLuaByFile } =
+        createMswPlugin(outDir);
     const transpiler = new Transpiler();
 
     // Cast needed: TSTL extends ts.CompilerOptions with extra fields unknown to tsc's types.
@@ -137,6 +142,7 @@ export function watch({ workingDirectory }: WatchOptions): void {
         try {
             const program = builderProgram.getProgram();
             emittedScripts.clear();
+            processedSourceFiles.clear();
 
             const { diagnostics } = transpiler.emit({ program });
 
@@ -160,19 +166,23 @@ export function watch({ workingDirectory }: WatchOptions): void {
                 return;
             }
 
-            writeLualibBundleScript(outDir);
+            // Delete the empty per-source-file stubs TSTL wrote
+            for (const sourceFile of processedSourceFiles) {
+                const rel = path.relative(scriptDir, sourceFile);
+                const stubPath = path.join(outDir, rel.replace(/\.ts$/, ".mlua"));
+                if (fs.existsSync(stubPath)) {
+                    fs.unlinkSync(stubPath);
+                }
+            }
+
+            writeLualibBundleScript(outDir, [...nonScriptClassLuaByFile.values()]);
 
             const rootDesk = path.join(resolvedWorkingDirectory, "RootDesk");
-            for (const [sourceFile, scriptType] of emittedScripts) {
-                const rel = path.relative(scriptDir, sourceFile);
-                const mlua = path.join(outDir, rel.replace(/\.ts$/, ".mlua"));
-                const mluaDir = path.dirname(mlua);
-                const name = path.basename(mlua, ".mlua");
-
-                ensureOutputDirectory(rootDesk, mluaDir);
+            ensureOutputDirectory(rootDesk, outDir);
+            for (const [className, scriptType] of emittedScripts) {
                 writeCodeblock(
-                    path.join(mluaDir, `${name}.codeblock`),
-                    name,
+                    path.join(outDir, `${className}.codeblock`),
+                    className,
                     scriptType,
                 );
             }
