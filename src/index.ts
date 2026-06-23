@@ -3,16 +3,18 @@ import { generateDeclarations } from "./declarations";
 import { build } from "./transpile";
 
 function addWorkingDirectoryOptions(cmd: Command): Command {
-    return cmd
-        .addOption(
-            new Option(
-                "-C, --cwd <world-directory>",
-                "World/project directory.",
-            ).default(process.cwd(), "current working directory"),
-        )
+    return cmd.addOption(
+        new Option(
+            "-C, --cwd <world-directory>",
+            "World/project directory.",
+        ).default(process.cwd(), "current working directory"),
+    );
 }
 
-function resolveWorkingDirectory(opts: { cwd: string; workingDirectory?: string }): string {
+function resolveWorkingDirectory(opts: {
+    cwd: string;
+    workingDirectory?: string;
+}): string {
     return opts.workingDirectory ?? opts.cwd;
 }
 
@@ -24,10 +26,15 @@ async function main() {
 
     const declarationsCmd = program
         .command("declarations")
-        .description("Generate TypeScript declarations from .d.mlua native scripts.");
+        .description(
+            "Generate TypeScript declarations from .d.mlua native scripts.",
+        );
     addWorkingDirectoryOptions(declarationsCmd);
     declarationsCmd.action(async () => {
-        const opts = declarationsCmd.optsWithGlobals<{ cwd: string; workingDirectory?: string }>();
+        const opts = declarationsCmd.optsWithGlobals<{
+            cwd: string;
+            workingDirectory?: string;
+        }>();
         const result = await generateDeclarations({
             workingDirectory: resolveWorkingDirectory(opts),
         });
@@ -41,7 +48,10 @@ async function main() {
         .description("Compile TypeScript sources to .mlua scripts.");
     addWorkingDirectoryOptions(buildCmd);
     buildCmd.action(async () => {
-        const opts = buildCmd.optsWithGlobals<{ cwd: string; workingDirectory?: string }>();
+        const opts = buildCmd.optsWithGlobals<{
+            cwd: string;
+            workingDirectory?: string;
+        }>();
         const result = await build({
             workingDirectory: resolveWorkingDirectory(opts),
         });

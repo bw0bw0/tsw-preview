@@ -1,5 +1,13 @@
 export type ScriptKind = "class" | "enum";
-export type MluaScriptType = "Logic" | "Component" | "Service" | "Event" | "Struct" | "Misc" | "Enum" | string;
+export type MluaScriptType =
+    | "Logic"
+    | "Component"
+    | "Service"
+    | "Event"
+    | "Struct"
+    | "Misc"
+    | "Enum"
+    | string;
 
 export interface DocComment {
     description?: string;

@@ -2,9 +2,13 @@ import * as ts from "typescript";
 
 // Types that require an explicit = value initializer in mlua property declarations
 const IMMEDIATE_INIT_TYPES = new Set([
-    "number", "int32", "float", "integer",
+    "number",
+    "int32",
+    "float",
+    "integer",
     "boolean",
-    "Entity", "EntityRef",
+    "Entity",
+    "EntityRef",
 ]);
 
 export function hasImmediateInit(type: string): boolean {
@@ -12,22 +16,35 @@ export function hasImmediateInit(type: string): boolean {
 }
 
 const PASSTHROUGH_TYPES = new Set([
-    "void", "string", "number", "boolean",
+    "void",
+    "string",
+    "number",
+    "boolean",
     "Entity",
-    "Vector2", "Vector3", "Vector4",
-    "FastVector2", "FastVector3",
+    "Vector2",
+    "Vector3",
+    "Vector4",
+    "FastVector2",
+    "FastVector3",
     "Quaternion",
     "Color",
-    "List", "Dictionary",
-    "SyncList", "SyncDictionary",
-    "ReadOnlyList", "ReadOnlyDictionary",
+    "List",
+    "Dictionary",
+    "SyncList",
+    "SyncDictionary",
+    "ReadOnlyList",
+    "ReadOnlyDictionary",
 ]);
 
 /**
  * Resolves a TypeScript node's type to an mlua type string.
  * Uses the explicit type annotation if present, otherwise infers via the type checker.
  */
-export function resolveType(program: ts.Program, node: ts.Node, isParam = false): string {
+export function resolveType(
+    program: ts.Program,
+    node: ts.Node,
+    isParam = false,
+): string {
     const raw = getRawTypeString(program, node)
         .replace(/\s+/g, "")
         .replace(/\|undefined/g, "")
@@ -55,7 +72,7 @@ export function resolveType(program: ts.Program, node: ts.Node, isParam = false)
 }
 
 function getRawTypeString(program: ts.Program, node: ts.Node): string {
-    const typeNode = (node as any).type as ts.TypeNode | undefined;
+    const typeNode = (node as ts.Node & { type?: ts.TypeNode }).type;
     if (typeNode && typeof typeNode.getText === "function") {
         return typeNode.getText();
     }

@@ -2,8 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import * as ts from "typescript";
 import { transpileProject } from "typescript-to-lua";
-import { createMswPlugin } from "./plugin";
 import { ensureOutputDirectory, writeCodeblock } from "./msw-files";
+import { createMswPlugin } from "./plugin";
 
 export interface BuildOptions {
     workingDirectory: string;
@@ -14,10 +14,17 @@ export interface BuildResult {
     outputDirectory: string;
 }
 
-export async function build({ workingDirectory }: BuildOptions): Promise<BuildResult> {
+export async function build({
+    workingDirectory,
+}: BuildOptions): Promise<BuildResult> {
     const resolvedWorkingDirectory = path.resolve(workingDirectory);
     const scriptDir = path.join(resolvedWorkingDirectory, "Script");
-    const outDir = path.join(resolvedWorkingDirectory, "RootDesk", "MyDesk", "Transpiled");
+    const outDir = path.join(
+        resolvedWorkingDirectory,
+        "RootDesk",
+        "MyDesk",
+        "Transpiled",
+    );
     const tsconfigPath = path.join(resolvedWorkingDirectory, "tsconfig.json");
 
     if (!fs.existsSync(scriptDir)) {
@@ -70,7 +77,11 @@ export async function build({ workingDirectory }: BuildOptions): Promise<BuildRe
         const name = path.basename(mlua, ".mlua");
 
         ensureOutputDirectory(rootDesk, mluaDir);
-        writeCodeblock(path.join(mluaDir, `${name}.codeblock`), name, scriptType);
+        writeCodeblock(
+            path.join(mluaDir, `${name}.codeblock`),
+            name,
+            scriptType,
+        );
     }
 
     return { emitSkipped, outputDirectory: outDir };

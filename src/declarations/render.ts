@@ -14,7 +14,12 @@ function renderDocComment(doc: DocComment | undefined, indent = ""): string {
     if (doc.sealed) tags.push(` * @sealed`);
     if (doc.deprecated) tags.push(` * @deprecated`);
     if (tags.length === 0) return "";
-    return [`${indent}/**`, ...tags.map((t) => `${indent}${t}`), `${indent} */`, ""].join("\n");
+    return [
+        `${indent}/**`,
+        ...tags.map((t) => `${indent}${t}`),
+        `${indent} */`,
+        "",
+    ].join("\n");
 }
 
 export function renderDeclaration(declaration: ScriptDeclaration): string {
@@ -45,7 +50,10 @@ export function renderDeclaration(declaration: ScriptDeclaration): string {
             continue;
         }
 
-        const memberDoc = renderDocComment("doc" in member ? member.doc : undefined, "    ");
+        const memberDoc = renderDocComment(
+            "doc" in member ? member.doc : undefined,
+            "    ",
+        );
         if (memberDoc) lines.push(memberDoc.trimEnd());
         lines.push(`    ${renderClassMember(member)}`);
     }
@@ -53,7 +61,10 @@ export function renderDeclaration(declaration: ScriptDeclaration): string {
     lines.push("", "}");
 
     if (declaration.scriptType === "Service") {
-        lines.push("", `declare const _${declaration.name}: ${declaration.name};`);
+        lines.push(
+            "",
+            `declare const _${declaration.name}: ${declaration.name};`,
+        );
     }
 
     return `${lines.join("\n")}\n`;

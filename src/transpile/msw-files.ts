@@ -79,13 +79,26 @@ export function ensureOutputDirectory(rootPath: string, dirPath: string): void {
         if (!fs.existsSync(current)) {
             fs.mkdirSync(current);
         }
-        const sidecar = path.join(path.dirname(current), `${segment}.directory`);
+        const sidecar = path.join(
+            path.dirname(current),
+            `${segment}.directory`,
+        );
         if (!fs.existsSync(sidecar)) {
-            fs.writeFileSync(sidecar, JSON.stringify(makeDirectory(segment), null, 4));
+            fs.writeFileSync(
+                sidecar,
+                JSON.stringify(makeDirectory(segment), null, 4),
+            );
         }
     }
 }
 
-export function writeCodeblock(filePath: string, name: string, scriptType: ScriptType): void {
-    fs.writeFileSync(filePath, JSON.stringify(makeCodeblock(name, scriptType), null, 4));
+export function writeCodeblock(
+    filePath: string,
+    name: string,
+    scriptType: ScriptType,
+): void {
+    fs.writeFileSync(
+        filePath,
+        JSON.stringify(makeCodeblock(name, scriptType), null, 4),
+    );
 }

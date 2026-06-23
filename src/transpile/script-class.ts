@@ -1,6 +1,11 @@
 import * as ts from "typescript";
 
-const SCRIPT_TYPE_DECORATORS = new Set(["LogicClass", "ComponentClass", "EventClass", "StructClass"]);
+const SCRIPT_TYPE_DECORATORS = new Set([
+    "LogicClass",
+    "ComponentClass",
+    "EventClass",
+    "StructClass",
+]);
 
 const DECORATOR_TO_SCRIPT_TYPE: Record<string, string> = {
     LogicClass: "Logic",
@@ -16,7 +21,9 @@ export interface ScriptClassInfo {
     members: ts.ClassElement[];
 }
 
-export function findScriptTypeDecorator(node: ts.ClassDeclaration): string | undefined {
+export function findScriptTypeDecorator(
+    node: ts.ClassDeclaration,
+): string | undefined {
     for (const modifier of node.modifiers ?? []) {
         if (!ts.isDecorator(modifier)) continue;
         const expr = modifier.expression;
@@ -44,7 +51,13 @@ export function collectScriptClass(sourceFile: ts.SourceFile): {
 
         const name = statement.name?.text;
         if (!name) {
-            diagnostics.push(makeDiagnostic(sourceFile, statement, "Script type class must have a name."));
+            diagnostics.push(
+                makeDiagnostic(
+                    sourceFile,
+                    statement,
+                    "Script type class must have a name.",
+                ),
+            );
             continue;
         }
 
@@ -52,12 +65,14 @@ export function collectScriptClass(sourceFile: ts.SourceFile): {
             (c) => c.token === ts.SyntaxKind.ExtendsKeyword,
         );
         const extendsName =
-            extendsClause?.types[0]?.expression && ts.isIdentifier(extendsClause.types[0].expression)
+            extendsClause?.types[0]?.expression &&
+            ts.isIdentifier(extendsClause.types[0].expression)
                 ? extendsClause.types[0].expression.text
                 : undefined;
 
         found.push({
-            scriptType: DECORATOR_TO_SCRIPT_TYPE[decoratorName] ?? decoratorName,
+            scriptType:
+                DECORATOR_TO_SCRIPT_TYPE[decoratorName] ?? decoratorName,
             className: name,
             extendsName,
             members: [...statement.members],
@@ -78,7 +93,11 @@ export function collectScriptClass(sourceFile: ts.SourceFile): {
     return { diagnostics, info: found[0] };
 }
 
-function makeDiagnostic(sourceFile: ts.SourceFile, node: ts.Node, message: string): ts.Diagnostic {
+function makeDiagnostic(
+    sourceFile: ts.SourceFile,
+    node: ts.Node,
+    message: string,
+): ts.Diagnostic {
     return {
         category: ts.DiagnosticCategory.Error,
         code: 0,

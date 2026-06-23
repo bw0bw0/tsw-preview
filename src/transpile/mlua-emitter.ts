@@ -1,7 +1,7 @@
 import * as ts from "typescript";
 import * as tstl from "typescript-to-lua";
 import type { ScriptClassInfo } from "./script-class";
-import { resolveType, hasImmediateInit } from "./type-resolver";
+import { hasImmediateInit, resolveType } from "./type-resolver";
 
 const DUMMY_PARAM = "____MSW_CLASS____";
 
@@ -24,15 +24,16 @@ export function wrapClassStatements(
             tstl.isAssignmentStatement(s) &&
             s.left.length === 1 &&
             s.right.length === 1 &&
+            // biome-ignore lint/style/noNonNullAssertion: length already checked above
             tstl.isFunctionExpression(s.right[0]!),
     );
 
     return [
         tstl.createExpressionStatement(
-            tstl.createFunctionExpression(
-                tstl.createBlock(methodStatements),
-                [tstl.createIdentifier(DUMMY_PARAM), tstl.createIdentifier(className)],
-            ),
+            tstl.createFunctionExpression(tstl.createBlock(methodStatements), [
+                tstl.createIdentifier(DUMMY_PARAM),
+                tstl.createIdentifier(className),
+            ]),
         ),
     ];
 }
@@ -47,12 +48,14 @@ function findLuaMethods(statements: tstl.Statement[]): Map<string, tstl.Block> {
         if (!tstl.isAssignmentStatement(s)) continue;
         if (s.left.length !== 1 || s.right.length !== 1) continue;
 
+        // biome-ignore lint/style/noNonNullAssertion: length already checked above
         const lhs = s.left[0]!;
         if (!tstl.isTableIndexExpression(lhs)) continue;
 
         const key = lhs.index;
         if (!tstl.isStringLiteral(key)) continue;
 
+        // biome-ignore lint/style/noNonNullAssertion: length already checked above
         const func = s.right[0]!;
         if (!tstl.isFunctionExpression(func)) continue;
 
@@ -75,8 +78,8 @@ export function extractWrappedStatements(
         if (!tstl.isFunctionExpression(fn)) continue;
         if (
             fn.params?.length === 2 &&
-            fn.params[0]!.text === DUMMY_PARAM &&
-            fn.params[1]!.text === className
+            fn.params[0]?.text === DUMMY_PARAM &&
+            fn.params[1]?.text === className
         ) {
             return fn.body.statements;
         }
@@ -103,10 +106,13 @@ export function printMluaScript(
 
     const lines: string[] = [];
     lines.push(`@${info.scriptType}`);
-    const extendsClause = info.extendsName ? ` extends ${info.extendsName}` : "";
+    const extendsClause = info.extendsName
+        ? ` extends ${info.extendsName}`
+        : "";
     lines.push(`script ${info.className}${extendsClause}`);
     lines.push("");
 
+    // biome-ignore lint/style/noNonNullAssertion: sourceFileName is always a file in the program
     const sourceFile = program.getSourceFile(sourceFileName)!;
 
     // Collect property names so we can strip their self-assignments from the constructor body
@@ -121,18 +127,28 @@ export function printMluaScript(
     const constructorBody = luaMethods.get("____constructor");
     // Statements to use for constructor body: drop super() call, then filter property assignments
     const constructorStatements = constructorBody
-        ? (info.extendsName ? constructorBody.statements.slice(1) : [...constructorBody.statements])
-              .filter((s) => !isSelfPropertyAssignment(s, propertyNames))
+        ? (info.extendsName
+              ? constructorBody.statements.slice(1)
+              : [...constructorBody.statements]
+          ).filter((s) => !isSelfPropertyAssignment(s, propertyNames))
         : [];
 
     // Emit properties from TypeScript AST
     for (const member of info.members) {
         if (!ts.isPropertyDeclaration(member)) continue;
-        const name = ts.isIdentifier(member.name) ? member.name.text : undefined;
+        const name = ts.isIdentifier(member.name)
+            ? member.name.text
+            : undefined;
         if (!name) continue;
         const typeStr = resolveType(program, member);
-        const isReadonly = member.modifiers?.some((m) => m.kind === ts.SyntaxKind.ReadonlyKeyword) ?? false;
-        const isStatic = member.modifiers?.some((m) => m.kind === ts.SyntaxKind.StaticKeyword) ?? false;
+        const isReadonly =
+            member.modifiers?.some(
+                (m) => m.kind === ts.SyntaxKind.ReadonlyKeyword,
+            ) ?? false;
+        const isStatic =
+            member.modifiers?.some(
+                (m) => m.kind === ts.SyntaxKind.StaticKeyword,
+            ) ?? false;
         for (const decorator of getDecorators(member)) {
             lines.push(`\t${decorator}`);
         }
@@ -141,7 +157,9 @@ export function printMluaScript(
         let propInit = "";
         if (!isReadonly) {
             if (hasImmediateInit(typeStr) || member.initializer) {
-                const val = member.initializer ? member.initializer.getText(sourceFile) : "nil";
+                const val = member.initializer
+                    ? member.initializer.getText(sourceFile)
+                    : "nil";
                 propInit = ` = ${val}`;
             } else {
                 propInit = " = nil";
@@ -152,14 +170,19 @@ export function printMluaScript(
     }
 
     // Emit constructor — name differs by script type
-    const constructorMethodName = info.scriptType === "Component" ? "OnInitialize" : "__Load";
-    const constructor = info.members.find(ts.isConstructorDeclaration);
-    if (constructor) {
+    const constructorMethodName =
+        info.scriptType === "Component" ? "OnInitialize" : "__Load";
+    const ctorDecl = info.members.find(ts.isConstructorDeclaration);
+    if (ctorDecl) {
         lines.push(`\tmethod void ${constructorMethodName}()`);
         if (constructorStatements.length > 0) {
             // @ts-expect-error printStatementArray is protected in LuaPrinter
-            const printed: (string | object)[] = printer.printStatementArray(constructorStatements);
-            const bodyStr = printed.map((n) => (typeof n === "string" ? n : (n as any).toString())).join("");
+            const printed: (string | object)[] = printer.printStatementArray(
+                constructorStatements,
+            );
+            const bodyStr = printed
+                .map((n) => (typeof n === "string" ? n : String(n)))
+                .join("");
             for (const bodyLine of bodyStr.split("\n")) {
                 if (bodyLine.trim()) lines.push(`\t\t${bodyLine.trimStart()}`);
             }
@@ -171,10 +194,15 @@ export function printMluaScript(
     // Emit methods: signature from TypeScript AST, body from Lua AST via TSTL printer
     for (const member of info.members) {
         if (!ts.isMethodDeclaration(member)) continue;
-        const name = ts.isIdentifier(member.name) ? member.name.text : undefined;
+        const name = ts.isIdentifier(member.name)
+            ? member.name.text
+            : undefined;
         if (!name) continue;
 
-        const isStatic = member.modifiers?.some((m) => m.kind === ts.SyntaxKind.StaticKeyword) ?? false;
+        const isStatic =
+            member.modifiers?.some(
+                (m) => m.kind === ts.SyntaxKind.StaticKeyword,
+            ) ?? false;
         const returnType = resolveType(program, member);
         const params = member.parameters
             .map((p) => {
@@ -200,9 +228,16 @@ export function printMluaScript(
             // handler <EventType> <name>(<EventType> event)
             // The event type comes from the first parameter's type annotation
             const firstParam = member.parameters[0];
-            const eventType = firstParam ? resolveType(program, firstParam, true) : "any";
-            const eventParamName = firstParam && ts.isIdentifier(firstParam.name) ? firstParam.name.text : "event";
-            lines.push(`\t${prefix}handler ${name}(${eventType} ${eventParamName})`);
+            const eventType = firstParam
+                ? resolveType(program, firstParam, true)
+                : "any";
+            const eventParamName =
+                firstParam && ts.isIdentifier(firstParam.name)
+                    ? firstParam.name.text
+                    : "event";
+            lines.push(
+                `\t${prefix}handler ${name}(${eventType} ${eventParamName})`,
+            );
         } else {
             lines.push(`\t${prefix}method ${returnType} ${name}(${params})`);
         }
@@ -210,8 +245,12 @@ export function printMluaScript(
         const body = luaMethods.get(name);
         if (body && body.statements.length > 0) {
             // @ts-expect-error printStatementArray is protected in LuaPrinter
-            const printed: (string | object)[] = printer.printStatementArray(body.statements);
-            const bodyStr = printed.map((n) => (typeof n === "string" ? n : (n as any).toString())).join("");
+            const printed: (string | object)[] = printer.printStatementArray(
+                body.statements,
+            );
+            const bodyStr = printed
+                .map((n) => (typeof n === "string" ? n : String(n)))
+                .join("");
             for (const bodyLine of bodyStr.split("\n")) {
                 if (bodyLine.trim()) lines.push(`\t\t${bodyLine.trimStart()}`);
             }
@@ -226,11 +265,16 @@ export function printMluaScript(
 }
 
 // Returns true if the statement is a `self.<name> = ...` assignment for a known property name
-function isSelfPropertyAssignment(s: tstl.Statement, propertyNames: Set<string>): boolean {
+function isSelfPropertyAssignment(
+    s: tstl.Statement,
+    propertyNames: Set<string>,
+): boolean {
     if (!tstl.isAssignmentStatement(s) || s.left.length !== 1) return false;
+    // biome-ignore lint/style/noNonNullAssertion: length already checked above
     const lhs = s.left[0]!;
     if (!tstl.isTableIndexExpression(lhs)) return false;
-    if (!tstl.isIdentifier(lhs.table) || lhs.table.text !== "self") return false;
+    if (!tstl.isIdentifier(lhs.table) || lhs.table.text !== "self")
+        return false;
     if (!tstl.isStringLiteral(lhs.index)) return false;
     return propertyNames.has(lhs.index.value);
 }

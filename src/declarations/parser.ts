@@ -1,8 +1,8 @@
 import type {
+    DocComment,
     MemberDeclaration,
     ParameterDeclaration,
     ScriptDeclaration,
-    DocComment,
 } from "./ast";
 import { must, splitTopLevel } from "./text";
 import { toReturnType, toTypeScriptType } from "./type-mapper";
@@ -78,7 +78,7 @@ function parseScriptType(annotations: string[]): string | undefined {
 
 function parseDocComment(annotations: string[]): DocComment | undefined {
     const description = annotations
-        .find((a) => a.startsWith('---@description'))
+        .find((a) => a.startsWith("---@description"))
         ?.match(/---@description\s+"([^"]+)"/)?.[1];
     const sealed = annotations.includes("---@sealed");
     const deprecated = annotations.includes("---@deprecated");
@@ -90,7 +90,10 @@ function parseDocComment(annotations: string[]): DocComment | undefined {
     };
 }
 
-function parseMember(line: string, annotations: string[]): MemberDeclaration | undefined {
+function parseMember(
+    line: string,
+    annotations: string[],
+): MemberDeclaration | undefined {
     const doc = parseDocComment(annotations);
 
     const enumMemberMatch = line.match(
