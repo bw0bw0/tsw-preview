@@ -1,15 +1,17 @@
 {
-  "name": "tsw",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "start": "bun run src/index"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  }
+    "name": "tsw",
+    "module": "index.ts",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "start": "bun run src/index",
+        "biome:fix": "biome check --write ."
+    },
+    "devDependencies": {
+        "@types/bun": "latest",
+        "@biomejs/biome": "^2.5.1"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    }
 }
