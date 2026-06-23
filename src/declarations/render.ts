@@ -185,6 +185,9 @@ function renderClassMember(
     }
 
     const staticPrefix = member.static ? "static " : "";
+    if (member.rawSignature !== undefined) {
+        return `${staticPrefix}${member.rawSignature};`;
+    }
     return `${staticPrefix}${renderMethodSignature(member)};`;
 }
 

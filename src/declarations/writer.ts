@@ -1,6 +1,7 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ScriptDeclaration } from "./ast";
+import { applyPatches } from "./patcher";
 import {
     renderDeclaration,
     renderIndexDeclaration,
@@ -21,6 +22,8 @@ export async function writeDeclarations(
         renderSupportDeclaration(),
         "utf8",
     );
+
+    applyPatches(declarations);
 
     for (const declaration of declarations) {
         const relativeSource = path.relative(

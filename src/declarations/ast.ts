@@ -48,6 +48,7 @@ export interface MethodDeclaration {
     parameters: ParameterDeclaration[];
     static: boolean;
     doc?: DocComment;
+    rawSignature?: string;
 }
 
 export interface ConstructorDeclaration {
