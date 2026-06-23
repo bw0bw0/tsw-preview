@@ -25,7 +25,23 @@ export async function generateDeclarations({
     );
     const outputDirectory = path.join(resolvedWorkingDirectory, "Type");
 
-    const sourceFiles = await findDeclarationFiles(sourceDirectory);
+    let sourceFiles: string[];
+    try {
+        sourceFiles = await findDeclarationFiles(sourceDirectory);
+    } catch (error) {
+        if (
+            error instanceof Error &&
+            "code" in error &&
+            (error as NodeJS.ErrnoException).code === "ENOENT"
+        ) {
+            throw new Error(
+                `\nNativeScripts directory not found\n\n` +
+                    `Make sure to enable "LocalWorkspace" and "UseExtendedScriptFormat" (Edit -> WorldConfig).\n`,
+            );
+        }
+        throw error;
+    }
+
     if (sourceFiles.length === 0) {
         throw new Error(`No .d.mlua files found in ${sourceDirectory}`);
     }
