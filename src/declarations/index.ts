@@ -23,7 +23,7 @@ export async function generateDeclarations({
         resolvedWorkingDirectory,
         nativeScriptsPath,
     );
-    const outputDirectory = path.join(resolvedWorkingDirectory, "type");
+    const outputDirectory = path.join(resolvedWorkingDirectory, "Type");
 
     const sourceFiles = await findDeclarationFiles(sourceDirectory);
     if (sourceFiles.length === 0) {

@@ -18,7 +18,7 @@ export async function writeTsConfig(workingDirectory: string) {
             skipLibCheck: true,
             types: [],
         },
-        include: ["type/index.d.ts", "**/*.ts", "**/*.tsx"],
+        include: ["Type/index.d.ts", "Script/**/*.ts"],
         exclude: ["node_modules"],
     };
 
