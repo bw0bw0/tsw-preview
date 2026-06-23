@@ -1,9 +1,10 @@
 import * as ts from "typescript";
 
-const SCRIPT_TYPE_DECORATORS = new Set(["LogicClass"]);
+const SCRIPT_TYPE_DECORATORS = new Set(["LogicClass", "ComponentClass"]);
 
 const DECORATOR_TO_SCRIPT_TYPE: Record<string, string> = {
     LogicClass: "Logic",
+    ComponentClass: "Component",
 };
 
 export interface ScriptClassInfo {

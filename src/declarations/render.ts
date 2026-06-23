@@ -46,6 +46,10 @@ export function renderSupportDeclaration(): string {
 /** Marks a class as a Logic script. Use instead of \`@Logic\` (which conflicts with the Logic base class). */
 declare function LogicClass(target: abstract new (...args: any[]) => any): void;
 
+/** Marks a class as a Component script. Use instead of \`@Component\` (which conflicts with the Component base class). */
+declare function ComponentClass(target: abstract new (...args: any[]) => any): void;
+
+
 declare function ExecSpace(space: "ClientOnly" | "ServerOnly" | "All"): (target: object, key: string, descriptor: PropertyDescriptor) => void;
 
 /** Marks a property as synchronized between server and client. */

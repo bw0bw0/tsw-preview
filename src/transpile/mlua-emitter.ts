@@ -103,7 +103,8 @@ export function printMluaScript(
 
     const lines: string[] = [];
     lines.push(`@${info.scriptType}`);
-    lines.push(`script ${info.className} extends ${info.extendsName ?? info.scriptType}`);
+    const extendsClause = info.extendsName ? ` extends ${info.extendsName}` : "";
+    lines.push(`script ${info.className}${extendsClause}`);
     lines.push("");
 
     // Emit properties from TypeScript AST
