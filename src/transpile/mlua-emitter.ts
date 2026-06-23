@@ -114,6 +114,9 @@ export function printMluaScript(
         if (!name) continue;
         const typeStr = resolveType(program, member);
         const init = member.initializer ? member.initializer.getText(sourceFile) : "nil";
+        for (const decorator of getDecorators(member)) {
+            lines.push(`\t${decorator}`);
+        }
         lines.push(`\tproperty ${typeStr} ${name} = ${init}`);
         lines.push("");
     }
@@ -156,7 +159,7 @@ export function printMluaScript(
             })
             .join(", ");
 
-        for (const decorator of getMethodDecorators(member)) {
+        for (const decorator of getDecorators(member)) {
             lines.push(`\t${decorator}`);
         }
         const prefix = isStatic ? "static " : "";
@@ -180,7 +183,7 @@ export function printMluaScript(
     return lines.join("\n");
 }
 
-function getMethodDecorators(node: ts.MethodDeclaration): string[] {
+function getDecorators(node: ts.HasModifiers): string[] {
     const results: string[] = [];
     for (const modifier of node.modifiers ?? []) {
         if (!ts.isDecorator(modifier)) continue;

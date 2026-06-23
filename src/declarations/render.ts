@@ -46,7 +46,10 @@ export function renderSupportDeclaration(): string {
 /** Marks a class as a Logic script. Use instead of \`@Logic\` (which conflicts with the Logic base class). */
 declare function LogicClass(target: abstract new (...args: any[]) => any): void;
 
-declare function ExecSpace(space: "ClientOnly" | "ServerOnly" | "All"): MethodDecorator;
+declare function ExecSpace(space: "ClientOnly" | "ServerOnly" | "All"): (target: object, key: string, descriptor: PropertyDescriptor) => void;
+
+/** Marks a property as synchronized between server and client. */
+declare function Sync(target: object, propertyKey: string, descriptor?: PropertyDescriptor): void;
 
 /** Lua print function. */
 declare function print(...args: any[]): void;
