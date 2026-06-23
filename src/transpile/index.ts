@@ -17,7 +17,7 @@ export interface BuildResult {
 export async function build({ workingDirectory }: BuildOptions): Promise<BuildResult> {
     const resolvedWorkingDirectory = path.resolve(workingDirectory);
     const scriptDir = path.join(resolvedWorkingDirectory, "Script");
-    const outDir = path.join(resolvedWorkingDirectory, "RootDesk", "Transpiled");
+    const outDir = path.join(resolvedWorkingDirectory, "RootDesk", "MyDesk", "Transpiled");
     const tsconfigPath = path.join(resolvedWorkingDirectory, "tsconfig.json");
 
     if (!fs.existsSync(scriptDir)) {
