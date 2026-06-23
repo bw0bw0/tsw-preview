@@ -118,6 +118,29 @@ export function printMluaScript(
         lines.push("");
     }
 
+    // Emit constructor as OnInitialize
+    const constructor = info.members.find(ts.isConstructorDeclaration);
+    if (constructor) {
+        const body = luaMethods.get("____constructor");
+        lines.push(`\tmethod void OnInitialize()`);
+        if (body) {
+            // Drop the leading super() call if the class extends something
+            const statements = info.extendsName
+                ? body.statements.slice(1)
+                : body.statements;
+            if (statements.length > 0) {
+                // @ts-expect-error printStatementArray is protected in LuaPrinter
+                const printed: (string | object)[] = printer.printStatementArray(statements);
+                const bodyStr = printed.map((n) => (typeof n === "string" ? n : (n as any).toString())).join("");
+                for (const bodyLine of bodyStr.split("\n")) {
+                    if (bodyLine.trim()) lines.push(`\t\t${bodyLine.trimStart()}`);
+                }
+            }
+        }
+        lines.push(`\tend`);
+        lines.push("");
+    }
+
     // Emit methods: signature from TypeScript AST, body from Lua AST via TSTL printer
     for (const member of info.members) {
         if (!ts.isMethodDeclaration(member)) continue;
