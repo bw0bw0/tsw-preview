@@ -1,17 +1,30 @@
 import * as ts from "typescript";
 
-const SCRIPT_TYPE_DECORATORS = new Set([
+export const SCRIPT_TYPE_DECORATORS = new Set([
     "LogicClass",
     "ComponentClass",
     "EventClass",
     "StructClass",
+    "BTNodeClass",
+    "ItemClass",
+    "StateClass",
+    "ConditionClass"
 ]);
 
-const DECORATOR_TO_SCRIPT_TYPE: Record<string, string> = {
+type ScriptTypeMapping = string | Record<string, string>;
+
+const DECORATOR_TO_SCRIPT_TYPE: Record<string, ScriptTypeMapping> = {
     LogicClass: "Logic",
     ComponentClass: "Component",
     EventClass: "Event",
     StructClass: "Struct",
+    BTNodeClass: {
+        ActionNode: "ActionNode",
+        DecoratorNode: "DecoratorNode",
+    },
+    ItemClass: "ItemType",
+    StateClass: "StateType",
+    ConditionClass: "ConditionType",
 };
 
 export interface ScriptClassInfo {
@@ -70,9 +83,27 @@ export function collectScriptClass(sourceFile: ts.SourceFile): {
                 ? extendsClause.types[0].expression.text
                 : undefined;
 
+        const typeMapping = DECORATOR_TO_SCRIPT_TYPE[decoratorName];
+        let scriptType: string;
+        if (typeof typeMapping === "object") {
+            const resolved = extendsName !== undefined ? typeMapping[extendsName] : undefined;
+            if (resolved === undefined) {
+                diagnostics.push(
+                    makeDiagnostic(
+                        sourceFile,
+                        statement,
+                        `@${decoratorName} requires a class that extends one of: ${Object.keys(typeMapping).join(", ")}.`,
+                    ),
+                );
+                continue;
+            }
+            scriptType = resolved;
+        } else {
+            scriptType = typeMapping ?? decoratorName;
+        }
+
         found.push({
-            scriptType:
-                DECORATOR_TO_SCRIPT_TYPE[decoratorName] ?? decoratorName,
+            scriptType,
             className: name,
             extendsName,
             members: [...statement.members],

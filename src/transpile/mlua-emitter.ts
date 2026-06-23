@@ -5,6 +5,11 @@ import { hasImmediateInit, resolveType } from "./type-resolver";
 
 const DUMMY_PARAM = "____MSW_CLASS____";
 
+const MLUA_ANNOTATION: Record<string, string> = {
+    ActionNode: "BTNode",
+    DecoratorNode: "BTNode",
+};
+
 /**
  * Wraps the method-assignment statements produced by TSTL's class transform
  * inside a dummy function so we can retrieve them by name in the printer.
@@ -105,7 +110,7 @@ export function printMluaScript(
     const printer = new tstl.LuaPrinter(emitHost, program, sourceFileName);
 
     const lines: string[] = [];
-    lines.push(`@${info.scriptType}`);
+    lines.push(`@${MLUA_ANNOTATION[info.scriptType] ?? info.scriptType}`);
     const extendsClause = info.extendsName
         ? ` extends ${info.extendsName}`
         : "";

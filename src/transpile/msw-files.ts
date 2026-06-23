@@ -2,13 +2,20 @@ import fs from "node:fs";
 import path from "node:path";
 import { generateContentId } from "./content-id";
 
-export type ScriptType = "Logic" | "Component" | "Event" | "Struct";
+export type ScriptType = "Logic" | "Component" | "Event" | "Struct" | "ActionNode" | "DecoratorNode";
 
 const CODEBLOCK_TYPE: Record<ScriptType, number> = {
     Component: 1,
     Event: 2,
     Logic: 5,
     Struct: 9,
+    ActionNode: 7,
+    DecoratorNode: 7,
+};
+
+const CODEBLOCK_TARGET: Partial<Record<ScriptType, string>> = {
+    ActionNode: "MOD.Core.BTNodes.ActionNode",
+    DecoratorNode: "MOD.Core.BTNodes.DecoratorNode",
 };
 
 function makeDirectory(name: string): object {
@@ -63,7 +70,7 @@ function makeCodeblock(name: string, scriptType: ScriptType): object {
                 Name: name,
                 Type: CODEBLOCK_TYPE[scriptType],
                 Source: 0,
-                Target: null,
+                Target: CODEBLOCK_TARGET[scriptType] ?? null,
             },
         },
     };

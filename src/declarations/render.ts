@@ -6,6 +6,7 @@ import type {
     ParameterDeclaration,
     ScriptDeclaration,
 } from "./ast";
+import { SCRIPT_TYPE_DECORATORS } from "../transpile/script-class";
 
 function renderDocComment(doc: DocComment | undefined, indent = ""): string {
     if (!doc) return "";
@@ -71,19 +72,16 @@ export function renderDeclaration(declaration: ScriptDeclaration): string {
 }
 
 export function renderSupportDeclaration(): string {
+    const decoratorDeclarations = [...SCRIPT_TYPE_DECORATORS]
+        .map(
+            (name) =>
+                `declare function ${name}(target: abstract new (...args: any[]) => any): void;`,
+        )
+        .join("\n\n");
+
     return `/* Shared support declarations for generated Maplestory Worlds types. */
 
-/** Marks a class as a Logic script. Use instead of \`@Logic\` (which conflicts with the Logic base class). */
-declare function LogicClass(target: abstract new (...args: any[]) => any): void;
-
-/** Marks a class as a Component script. Use instead of \`@Component\` (which conflicts with the Component base class). */
-declare function ComponentClass(target: abstract new (...args: any[]) => any): void;
-
-/** Marks a class as an Event script. */
-declare function EventClass(target: abstract new (...args: any[]) => any): void;
-
-/** Marks a class as a Struct script. */
-declare function StructClass(target: abstract new (...args: any[]) => any): void;
+${decoratorDeclarations}
 
 
 declare function ExecSpace(space: "ClientOnly" | "ServerOnly" | "All"): (target: object, key: string, descriptor: PropertyDescriptor) => void;
