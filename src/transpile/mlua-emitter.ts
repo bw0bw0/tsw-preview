@@ -242,6 +242,10 @@ export function printMluaScript(
             lines.push(`\t${prefix}method ${returnType} ${name}(${params})`);
         }
 
+        if (info.scriptType === "Logic" && name === "OnBeginPlay") {
+            lines.push(`\t\t_LuaLib:lualib_bundle_Load()`);
+        }
+
         const body = luaMethods.get(name);
         if (body && body.statements.length > 0) {
             // @ts-expect-error printStatementArray is protected in LuaPrinter

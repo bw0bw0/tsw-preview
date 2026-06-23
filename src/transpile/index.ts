@@ -4,6 +4,7 @@ import * as ts from "typescript";
 import { transpileProject } from "typescript-to-lua";
 import { ensureOutputDirectory, writeCodeblock } from "./msw-files";
 import { createMswPlugin } from "./plugin";
+import { writeLualibBundleScript } from "./lualib-wrapper";
 
 export interface BuildOptions {
     workingDirectory: string;
@@ -67,6 +68,8 @@ export async function build({
         });
         throw new Error(messages.join("\n"));
     }
+
+    writeLualibBundleScript(outDir);
 
     // Write .directory sidecars for each output directory, and .codeblock for each script
     const rootDesk = path.join(resolvedWorkingDirectory, "RootDesk");
