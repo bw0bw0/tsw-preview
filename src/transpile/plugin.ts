@@ -4,7 +4,6 @@ import { SourceNode } from "source-map";
 import type { Plugin } from "typescript-to-lua";
 import { collectScriptClass } from "./script-class";
 import { wrapClassStatements, printMluaScript } from "./mlua-emitter";
-import { printModuleScript, makeModulePrintResult } from "./module-emitter";
 import type { ScriptType } from "./msw-files";
 
 export interface MswPlugin {
@@ -32,14 +31,9 @@ export function createMswPlugin(): MswPlugin {
                 return new tstl.LuaPrinter(emitHost, program, sourceFileName).print(file);
             }
 
-            const luaPrinter = new tstl.LuaPrinter(emitHost, program, sourceFileName);
             const { info } = collectScriptClass(sourceFile);
-
             if (!info) {
-                // Module file — wrap in @Logic ScriptModule with __Load()
-                emittedScripts.set(sourceFileName, "Logic");
-                const code = printModuleScript(sourceFileName, file, luaPrinter);
-                return makeModulePrintResult(code);
+                return new tstl.LuaPrinter(emitHost, program, sourceFileName).print(file);
             }
 
             emittedScripts.set(sourceFileName, info.scriptType as ScriptType);
